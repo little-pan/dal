@@ -84,7 +84,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 	}
 
 	@Override
-	public Callable<K> createTask() throws SQLException {
+	public TaskCallable<K> createTask() throws SQLException {
 		hints = hints.clone();
 		handleKeyHolder(false);
 
@@ -106,8 +106,8 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 	}
 
 	@Override
-	public Map<String, Callable<K>> createTasks() throws SQLException {
-		Map<String, Callable<K>> tasks = new HashMap<>();
+	public Map<String, TaskCallable<K>> createTasks() throws SQLException {
+		Map<String, TaskCallable<K>> tasks = new HashMap<>();
 		
 		// I know this is not so elegant.
 		handleKeyHolder(true);
@@ -141,7 +141,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
         setGeneratedKeyBack(task, hints, rawPojos);
 	}
 
-	private static class BulkTaskCallable<K, T> implements Callable<K> {
+	private static class BulkTaskCallable<K, T> implements TaskCallable<K> {
 		private String logicDbName;
 		private String rawTableName;
 		private DalHints hints;
@@ -164,9 +164,9 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 			    return task.getEmptyValue();
 			
 			if(isTableShardingEnabled(logicDbName, rawTableName)) {
-				return executeByTableShards();
+				return executeByTableShards((DalBulkTaskContext<T>) taskContext.fork());
 			}else{
-				return execute(hints, shaffled, taskContext);
+				return execute(hints, shaffled, (DalBulkTaskContext<T>) taskContext.fork());
 			}
 		}
 
@@ -177,13 +177,14 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 		    DalHints localHints = prepareLocalHints(task, hints);
 
             try {
-                partial = task.execute(localHints, pojosInShard, (DalBulkTaskContext<T>) taskContext.fork());
+                partial = task.execute(localHints, pojosInShard, (DalBulkTaskContext<T>) taskContext);
             } catch (Throwable e) {
                 error = e;
             }
 
             mergePartial(task, hints.getKeyHolder(), indexList, localHints.getKeyHolder(), error);
 
+            this.taskContext.setStatementExecuteTime(taskContext.getStatementExecuteTime());
             // Upper level may handle continue on error
             if(error != null)
                 throw DalException.wrap(error);
@@ -191,7 +192,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 		    return partial;
 		}
 
-		private K executeByTableShards() throws SQLException {
+		private K executeByTableShards(DalBulkTaskContext<T> taskContext) throws SQLException {
 			BulkTaskResultMerger<K> merger = task.createMerger();
 			
 			Map<String, Map<Integer, Map<String, ?>>> pojosInTable = shuffleByTable(logicDbName, rawTableName, hints.getTableShardId(), shaffled);
@@ -201,6 +202,7 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 			}
 				
 			DalHints localHints;
+			long allTableStatementExecuteTime = 0;
 			for(String curTableShardId: pojosInTable.keySet()) {
 				Map<Integer, Map<String, ?>> pojosInShard = pojosInTable.get(curTableShardId);
 
@@ -212,16 +214,22 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 
 				Throwable error = null;
                 try {
-                    K partial = task.execute(localHints, pojosInShard, (DalBulkTaskContext<T>)taskContext.fork());
+                    K partial = task.execute(localHints, pojosInShard, (DalBulkTaskContext<T>)taskContext);
                     merger.addPartial(curTableShardId, partial);
                 } catch (Throwable e) {
                     error = e;
                 }
-
+				allTableStatementExecuteTime += taskContext.getStatementExecuteTime();
                 mergePartial(task, hints.getKeyHolder(), indexList, localHints.getKeyHolder(), error);
                 hints.handleError("Error when execute table shard operation", error);
 			}
+			this.taskContext.setStatementExecuteTime(allTableStatementExecuteTime);
 			return merger.merge();
+		}
+
+		@Override
+		public DalTaskContext getDalTaskContext() {
+			return this.taskContext;
 		}
 	}
 }

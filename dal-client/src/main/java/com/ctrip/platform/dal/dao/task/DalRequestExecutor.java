@@ -111,7 +111,8 @@ public class DalRequestExecutor {
 		Throwable error = null;
 		
 		LogContext logContext = logger.start(request);
-		
+		long startTime = System.currentTimeMillis();
+
 		try {
 //			request.validate();
 			request.validateAndPrepare();
@@ -128,7 +129,8 @@ public class DalRequestExecutor {
 		} catch (Throwable e) {
 			error = e;
 		}
-		
+
+		logContext.setDaoExecuteTime(System.currentTimeMillis() - startTime);
 		logger.end(logContext, error);
 		
 		handleCallback(hints, result, error);
@@ -145,7 +147,7 @@ public class DalRequestExecutor {
 	}
 	
 	private <T> T crossShardExecute(LogContext logContext, DalHints hints, DalRequest<T> request) throws Exception {
-        Map<String, Callable<T>> tasks = request.createTasks();
+        Map<String, TaskCallable<T>> tasks = request.createTasks();
         logContext.setShards(tasks.keySet());
 
         boolean isSequentialExecution = hints.is(DalHintEnum.sequentialExecution);
@@ -187,9 +189,10 @@ public class DalRequestExecutor {
 			qc.onError(error);
 	}
 
-	private <T> T parallelExecute(DalHints hints, Map<String, Callable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
+	private <T> T parallelExecute(DalHints hints, Map<String, TaskCallable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
 		Map<String, Future<T>> resultFutures = new HashMap<>();
-		
+
+		long maxStatementExecuteTime = 0;
 		for(final String shard: tasks.keySet())
 			resultFutures.put(shard, serviceRef.get().submit(new RequestTaskWrapper<T>(shard, tasks.get(shard), logContext)));
 
@@ -199,20 +202,25 @@ public class DalRequestExecutor {
 			} catch (Throwable e) {
 				hints.handleError("There is error during parallel execution: ", e);
 			}
+			maxStatementExecuteTime = Math.max(maxStatementExecuteTime, tasks.get(entry.getKey()).getDalTaskContext().getStatementExecuteTime());
 		}
-		
+
+		logContext.setStatementExecuteTime(maxStatementExecuteTime);
 		return merger.merge();
 	}
 
-	private <T> T seqncialExecute(DalHints hints, Map<String, Callable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
+	private <T> T seqncialExecute(DalHints hints, Map<String, TaskCallable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
+		long totalStatementExecuteTime = 0;
 		for(final String shard: tasks.keySet()) {
 			try {
 				merger.addPartial(shard, new RequestTaskWrapper<T>(shard, tasks.get(shard), logContext).call());
 			} catch (Throwable e) {
 				hints.handleError("There is error during sequential execution: ", e);
 			}
+			totalStatementExecuteTime += tasks.get(shard).getDalTaskContext().getStatementExecuteTime();
 		}
-		
+
+		logContext.setStatementExecuteTime(totalStatementExecuteTime);
 		return merger.merge();
 	}
 	

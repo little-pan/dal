@@ -12,6 +12,7 @@ import java.util.*;
 public class DefaultTaskContext implements DalTaskContext, DalContextConfigure {
     protected Set<String> tables = new HashSet<>();
     protected ShardingCategory category;
+    protected long statementExecuteTime = 0;
 
     protected int pojosCount = 0;
     // cc 20181010
@@ -75,5 +76,15 @@ public class DefaultTaskContext implements DalTaskContext, DalContextConfigure {
         taskContext.identityFields = getIdentityFields();
         taskContext.pojosCount = this.pojosCount;
         return taskContext;
+    }
+
+    @Override
+    public void setStatementExecuteTime(long statementExecuteTime) {
+        this.statementExecuteTime = statementExecuteTime;
+    }
+
+    @Override
+    public long getStatementExecuteTime() {
+        return this.statementExecuteTime;
     }
 }

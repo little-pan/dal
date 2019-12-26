@@ -13,6 +13,8 @@ public class LogContext {
     private boolean singleTask;
     private boolean seqencialExecution;
     private Set<String> shards;
+    private long daoExecuteTime = 0;
+    private long statementExecuteTime = 0;
 
     public boolean isSingleTask() {
         return singleTask;
@@ -60,5 +62,21 @@ public class LogContext {
 
     public String getCaller() {
         return caller;
+    }
+
+    public long getDaoExecuteTime() {
+        return daoExecuteTime;
+    }
+
+    public void setDaoExecuteTime(long daoExecuteTime) {
+        this.daoExecuteTime = daoExecuteTime;
+    }
+
+    public long getStatementExecuteTime() {
+        return statementExecuteTime;
+    }
+
+    public void setStatementExecuteTime(long statementExecuteTime) {
+        this.statementExecuteTime = statementExecuteTime;
     }
 }

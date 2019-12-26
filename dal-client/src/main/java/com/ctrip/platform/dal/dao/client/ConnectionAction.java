@@ -17,6 +17,7 @@ import com.ctrip.platform.dal.dao.Version;
 import com.ctrip.platform.dal.dao.configure.dalproperties.DalPropertiesLocator;
 import com.ctrip.platform.dal.dao.configure.dalproperties.DalPropertiesManager;
 import com.ctrip.platform.dal.dao.task.DalTaskContext;
+import com.ctrip.platform.dal.dao.task.DefaultTaskContext;
 import com.ctrip.platform.dal.exceptions.DalException;
 import com.ctrip.platform.dal.exceptions.TransactionSystemException;
 
@@ -44,12 +45,14 @@ public abstract class ConnectionAction<T> {
     public Set<String> tables;
     private static final String SWITCH_OFF = "SwitchOff";
     public ShardingCategory shardingCategory;
+    public DalTaskContext dalTaskContext;
 
     void populate(DalEventEnum operation, String sql, StatementParameters parameters, DalTaskContext dalTaskContext) {
         this.operation = operation;
         this.sql = sql;
         this.parameters = parameters;
         if (dalTaskContext != null) {
+            this.dalTaskContext = dalTaskContext;
             this.tables = dalTaskContext.getTables();
             this.shardingCategory = dalTaskContext.getShardingCategory();
         }
@@ -63,6 +66,7 @@ public abstract class ConnectionAction<T> {
         this.operation = DalEventEnum.BATCH_UPDATE;
         this.sqls = sqls;
         if (dalTaskContext != null) {
+            this.dalTaskContext = dalTaskContext;
             this.tables = dalTaskContext.getTables();
             this.shardingCategory = dalTaskContext.getShardingCategory();
         }
@@ -77,6 +81,7 @@ public abstract class ConnectionAction<T> {
         this.sql = sql;
         this.parametersList = parametersList;
         if (dalTaskContext != null) {
+            this.dalTaskContext = dalTaskContext;
             this.tables = dalTaskContext.getTables();
             this.shardingCategory = dalTaskContext.getShardingCategory();
         }
@@ -101,6 +106,7 @@ public abstract class ConnectionAction<T> {
         this.callString = callString;
         this.parameters = parameters;
         if (dalTaskContext != null) {
+            this.dalTaskContext = dalTaskContext;
             this.tables = dalTaskContext.getTables();
             this.shardingCategory = dalTaskContext.getShardingCategory();
         }
@@ -115,6 +121,7 @@ public abstract class ConnectionAction<T> {
         this.callString = callString;
         this.parametersList = parametersList;
         if (dalTaskContext != null) {
+            this.dalTaskContext = dalTaskContext;
             this.tables = dalTaskContext.getTables();
             this.shardingCategory = dalTaskContext.getShardingCategory();
         }
@@ -231,7 +238,9 @@ public abstract class ConnectionAction<T> {
 
     private void log(Object result, Throwable e) {
         try {
-            entry.setDuration(System.currentTimeMillis() - start);
+            long statementExecuteTime = System.currentTimeMillis() - start;
+            entry.setDuration(statementExecuteTime);
+            dalTaskContext.setStatementExecuteTime(statementExecuteTime);
             if (dalPropertiesLocator.getTableParseSwitch() == TableParseSwitch.OFF) {
                 Set<String> localTables = new HashSet<>();
                 localTables.add(SWITCH_OFF);

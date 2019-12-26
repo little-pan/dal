@@ -11,10 +11,10 @@ import com.ctrip.platform.dal.exceptions.DalException;
 public class RequestTaskWrapper<T> implements Callable<T> {
     private DalLogger logger = DalClientFactory.getDalLogger();
     private String shard;
-    private Callable<T> task;
+    private TaskCallable<T> task;
     private LogContext logContext;
 
-    public RequestTaskWrapper(String shard, Callable<T> task, LogContext logContext) {
+    public RequestTaskWrapper(String shard, TaskCallable<T> task, LogContext logContext) {
         this.shard = shard;
         this.task = task;
         this.logContext = logContext;
@@ -37,6 +37,7 @@ public class RequestTaskWrapper<T> implements Callable<T> {
             error = e;
         }
 
+        logContext.setStatementExecuteTime(task.getDalTaskContext().getStatementExecuteTime());
         logger.endTask(logContext, shard, error);
 
         if(error != null)

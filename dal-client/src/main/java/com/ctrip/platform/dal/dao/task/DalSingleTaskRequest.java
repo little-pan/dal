@@ -91,12 +91,12 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]> {
     }
 
     @Override
-    public Callable<int[]> createTask() {
+    public TaskCallable<int[]> createTask() {
         return new SingleTaskCallable<>(hints, daoPojos, rawPojos, task, dalTaskContext);
     }
 
     @Override
-    public Map<String, Callable<int[]>> createTasks() throws SQLException {
+    public Map<String, TaskCallable<int[]>> createTasks() throws SQLException {
         throw new DalException(ErrorCode.NotSupported);
     }
 
@@ -111,7 +111,7 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]> {
         setGeneratedKeyBack(task, hints, rawPojos);
     }
 
-    private static class SingleTaskCallable<T> implements Callable<int[]> {
+    private static class SingleTaskCallable<T> implements TaskCallable<int[]> {
         private DalHints hints;
         private List<Map<String, ?>> daoPojos;
         private List<T> rawPojos;
@@ -144,6 +144,11 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]> {
             }
 
             return counts;
+        }
+
+        @Override
+        public DalTaskContext getDalTaskContext() {
+            return this.taskContext;
         }
     }
 }

@@ -15,4 +15,6 @@ public interface DalTaskContext {
     List<Map<String, Object>> getIdentityFields();
     int getPojosCount();
     DalTaskContext fork();
+    long getStatementExecuteTime();
+    void setStatementExecuteTime(long statementExecuteTime);
 }
