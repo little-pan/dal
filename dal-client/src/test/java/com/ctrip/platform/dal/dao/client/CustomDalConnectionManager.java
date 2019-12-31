@@ -17,6 +17,6 @@ public class CustomDalConnectionManager extends DalConnectionManager {
     @Override
     public DalConnection getNewConnection(DalHints hints, boolean useMaster, DalEventEnum operation)
             throws SQLException {
-        return new DalConnection(new CustomConnection(), true, null, super.getNewConnection(hints, useMaster, operation).getMeta());
+        return new DalConnection(new CustomConnection(), true, null, super.getNewConnection(hints, useMaster, operation).getMeta(), "");
     }
 }

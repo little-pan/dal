@@ -44,7 +44,7 @@ public class DalConnectionTest {
 	
 	private DalConnection getConnection() throws Exception {
 		Connection conn = DalClientFactory.getDalConfigure().getLocator().getConnection(connectionString);
-		return new DalConnection(conn, true, null, DbMeta.createIfAbsent(connectionString, null, conn));
+		return new DalConnection(conn, true, null, DbMeta.createIfAbsent(connectionString, null, conn), "");
 	}
 	
 	@Test

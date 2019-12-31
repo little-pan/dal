@@ -20,14 +20,16 @@ public class DalConnection {
     private DbMeta meta;
     private DalLogger logger;
     private boolean needDiscard;
+    private String allInOneKey;
 
-    public DalConnection(Connection conn, boolean master, String shardId, DbMeta meta) throws SQLException {
+    public DalConnection(Connection conn, boolean master, String shardId, DbMeta meta, String allInOneKey) throws SQLException {
         this.oldIsolationLevel = conn.getTransactionIsolation();
         this.conn = conn;
         this.master = master;
         this.shardId = shardId;
         this.meta = meta;
         this.logger = DalClientFactory.getDalLogger();
+        this.allInOneKey = allInOneKey;
     }
 
     public Connection getConn() {
@@ -48,6 +50,14 @@ public class DalConnection {
 
     public String getDatabaseName() throws SQLException {
         return meta.getDatabaseName();
+    }
+
+    public String getAllInOneKey() {
+        return allInOneKey;
+    }
+
+    public void setAllInOneKey(String allInOneKey) {
+        this.allInOneKey = allInOneKey;
     }
 
     public void setAutoCommit(boolean autoCommit) throws SQLException {

@@ -49,7 +49,7 @@ public class ConnectionActionTest {
         Connection conn = null;
         conn = DalClientFactory.getDalConfigure().getLocator().getConnection(connectionString);
         return new DalConnection(conn, true, null, DbMeta.createIfAbsent(connectionString,
-                DalClientFactory.getDalConfigure().getDatabaseSet(connectionString).getDatabaseCategory(), conn));
+                DalClientFactory.getDalConfigure().getDatabaseSet(connectionString).getDatabaseCategory(), conn), connectionString);
     }
 
     private static DalConnectionManager getDalConnectionManager() throws Exception {

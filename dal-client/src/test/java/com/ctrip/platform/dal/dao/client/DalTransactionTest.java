@@ -44,18 +44,18 @@ public class DalTransactionTest {
 	private DalConnection getDalConnection() throws Exception {
 		Connection conn = null;
 		conn = DalClientFactory.getDalConfigure().getLocator().getConnection(logicDbName);
-		return new DalConnection(conn, true, null, DbMeta.createIfAbsent(logicDbName, null, conn));
+		return new DalConnection(conn, true, null, DbMeta.createIfAbsent(logicDbName, null, conn), "");
 	}
 
     private DalConnection getDalConnection(int shard) throws Exception {
         Connection conn = null;
         conn = DalClientFactory.getDalConfigure().getLocator().getConnection("SqlSvrShard_" + shard);
-        return new DalConnection(conn, true, String.valueOf(shard), DbMeta.createIfAbsent(logicDbName, DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName).getDatabaseCategory(), conn));
+        return new DalConnection(conn, true, String.valueOf(shard), DbMeta.createIfAbsent(logicDbName, DalClientFactory.getDalConfigure().getDatabaseSet(logicDbName).getDatabaseCategory(), conn), "");
     }
 
     private DalConnection getCustomDalConnection() throws Exception {
 		Connection conn = new CustomConnection();
-		return new DalConnection(conn, true, null, null);
+		return new DalConnection(conn, true, null, null, "");
 	}
 
 	@Test
