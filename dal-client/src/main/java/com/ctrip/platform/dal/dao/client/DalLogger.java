@@ -114,6 +114,11 @@ public interface DalLogger extends DalComponent {
 	void fail(LogEntry entry, Throwable e);
 
 	/**
+	 * The DB operation is continual error
+	 */
+	void reportError(LogEntry entry);
+
+	/**
 	 * The DB is marked down because of error count threshold is reached
 	 * @param markdown
 	 */

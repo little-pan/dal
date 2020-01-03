@@ -52,6 +52,8 @@ public abstract class ConnectionAction<T> {
     public DalTaskContext dalTaskContext;
     private Map<String, LocalDateTime> firstErrorTimeMap = new ConcurrentHashMap<>();
     private static final int PERMIT_ERROR_DURATION_TIME = 1; //minute
+    private static final int REPORT_ERROR_FREQUENCY = 30; //second
+    private long lastReportErrorTime = 0;
 
     void populate(DalEventEnum operation, String sql, StatementParameters parameters, DalTaskContext dalTaskContext) {
         this.operation = operation;
@@ -253,6 +255,7 @@ public abstract class ConnectionAction<T> {
                 entry.setTables(localTables);
             } else
                 entry.setTables(tables);
+            dalTaskContext.setLogEntry(entry);
             if (e == null) {
                 logger.success(entry, entry.getResultCount());
             } else {
@@ -326,15 +329,19 @@ public abstract class ConnectionAction<T> {
                 Duration duration = Duration.between(firstErrorTime, nowTime);
                 if (duration.toMinutes() >= PERMIT_ERROR_DURATION_TIME) {
                     //report dashboard and control frequency
-
+                    long now = System.currentTimeMillis();
+                    if (lastReportErrorTime == 0 || now - lastReportErrorTime > REPORT_ERROR_FREQUENCY * 1000) {
+                        logger.reportError(entry);
+                    }
                 }
             }
             throw e instanceof SQLException ? (SQLException) e : DalException.wrap(e);
         }
         else {
             if (firstErrorTime != null) {
-                //reset firstErrorTime of this allInOneKey
+                //reset firstErrorTime of this allInOneKey and lastReportErrorTime
                 firstErrorTimeMap.put(connHolder.getAllInOneKey(), null);
+                lastReportErrorTime = 0;
             }
         }
     }

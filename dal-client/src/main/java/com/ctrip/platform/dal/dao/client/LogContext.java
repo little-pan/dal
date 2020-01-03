@@ -1,5 +1,6 @@
 package com.ctrip.platform.dal.dao.client;
 
+import java.util.List;
 import java.util.Set;
 
 
@@ -15,6 +16,8 @@ public class LogContext {
     private Set<String> shards;
     private long daoExecuteTime = 0;
     private long statementExecuteTime = 0;
+    private List<LogEntry> entries;
+    private boolean isCrossShard;
 
     public boolean isSingleTask() {
         return singleTask;
@@ -78,5 +81,21 @@ public class LogContext {
 
     public void setStatementExecuteTime(long statementExecuteTime) {
         this.statementExecuteTime = statementExecuteTime;
+    }
+
+    public List<LogEntry> getEntries() {
+        return entries;
+    }
+
+    public void setEntries(List<LogEntry> entries) {
+        this.entries = entries;
+    }
+
+    public boolean isCrossShard() {
+        return isCrossShard;
+    }
+
+    public void setCrossShard(boolean crossShard) {
+        isCrossShard = crossShard;
     }
 }
