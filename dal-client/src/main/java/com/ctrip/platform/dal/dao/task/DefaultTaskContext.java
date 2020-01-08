@@ -1,6 +1,7 @@
 package com.ctrip.platform.dal.dao.task;
 
 import com.ctrip.platform.dal.common.enums.ShardingCategory;
+import com.ctrip.platform.dal.dao.client.LogEntry;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -17,6 +18,8 @@ public class DefaultTaskContext implements DalTaskContext, DalContextConfigure {
     protected int pojosCount = 0;
     // cc 20181010
     protected List<Map<String, Object>> identityFields;
+
+    protected LogEntry logEntry;
 
     @Override
     public Set<String> getTables() {
@@ -81,6 +84,16 @@ public class DefaultTaskContext implements DalTaskContext, DalContextConfigure {
     @Override
     public void setStatementExecuteTime(long statementExecuteTime) {
         this.statementExecuteTime = statementExecuteTime;
+    }
+
+    @Override
+    public void setLogEntry(LogEntry entry) {
+        this.logEntry = logEntry;
+    }
+
+    @Override
+    public LogEntry getLogEntry() {
+        return logEntry;
     }
 
     @Override

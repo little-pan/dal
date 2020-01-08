@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.ctrip.platform.dal.dao.UpdatableEntity;
+import com.ctrip.platform.dal.dao.client.LogEntry;
 
 /**
  * An execution context that holds only intermediate product during bulk task execution.
@@ -23,6 +24,8 @@ public class BulkTaskContext<T> extends DefaultTaskContext implements DalBulkTas
 	private boolean isUpdatableEntity;
 	// This is only for batch update operation
 	private Map<String, Boolean> pojoFieldStatus;
+
+	private LogEntry logEntry;
 
 	@Override
 	public Map<String, Boolean> getPojoFieldStatus() {
@@ -75,5 +78,15 @@ public class BulkTaskContext<T> extends DefaultTaskContext implements DalBulkTas
 		taskContext.category = this.category;
 
 		return taskContext;
+	}
+
+	@Override
+	public void setLogEntry(LogEntry entry) {
+		this.logEntry = logEntry;
+	}
+
+	@Override
+	public LogEntry getLogEntry() {
+		return logEntry;
 	}
 }
