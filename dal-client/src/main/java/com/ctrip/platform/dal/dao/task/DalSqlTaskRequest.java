@@ -294,10 +294,10 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
         @Override
         public T call() throws Exception {
             if (isTableShardingEnabled) {
-                return executeByTableSharding(tableShards, client, parameters, hints, dalTaskContext.fork(), builder, merger);
+                return executeByTableSharding(tableShards, client, parameters, hints, dalTaskContext, builder, merger);
             }
 
-            return execute(null, client, parameters, hints, dalTaskContext.fork(), builder, merger, tableShards);
+            return execute(null, client, parameters, hints, dalTaskContext, builder, merger, tableShards);
         }
 
         private T executeByTableSharding(Set<String> tableShards, DalClient client, StatementParameters parameters,
@@ -337,10 +337,10 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
                 } catch (Throwable e) {
                     error = e;
                 }
-                allTableStatementExecuteTime += taskContext.getStatementExecuteTime();
+                allTableStatementExecuteTime += getStatementExecuteTime(taskContext);
                 hints.handleError("Error when execute table shard operation", error);
             }
-            this.dalTaskContext.setStatementExecuteTime(allTableStatementExecuteTime);
+            setStatementExecuteTime(taskContext, allTableStatementExecuteTime);
             return merger.merge();
         }
 
@@ -359,10 +359,10 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
                 } catch (Throwable e) {
                     error = e;
                 }
-                allTableStatementExecuteTime += taskContext.getStatementExecuteTime();
+                allTableStatementExecuteTime += getStatementExecuteTime(taskContext);
                 hints.handleError("Error when execute table shard operation", error);
             }
-            this.dalTaskContext.setStatementExecuteTime(allTableStatementExecuteTime);
+            setStatementExecuteTime(taskContext, allTableStatementExecuteTime);
             return merger.merge();
         }
 
@@ -386,11 +386,7 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
                     ((DalContextConfigure) taskContext).addTables(tableName);
 
             String compiledSql = compileSql(builder.build(), originalParameters);
-            T result = task.execute(client, compiledSql, compiledParameters, hints.clone(), taskContext);
-            if (StringUtils.isEmpty(tableShardId)) {
-                this.dalTaskContext.setStatementExecuteTime(taskContext.getStatementExecuteTime());
-            }
-            return result;
+            return task.execute(client, compiledSql, compiledParameters, hints.clone(), taskContext);
         }
 
         private T executeWithSqlBuilder(String tableShardId, String tableName, DalClient client,
@@ -413,7 +409,7 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
                             AbstractFreeSqlBuilder freeSqlBuilder = (AbstractFreeSqlBuilder) builder;
                             String compiledSql = compileSql(freeSqlBuilder.build(), originalParameters);
                             return task.execute(client, compiledSql, compiledParameters, hints.clone(),
-                                    taskContext.fork());
+                                    taskContext);
                         }
                     }
                 }
@@ -463,7 +459,7 @@ public class DalSqlTaskRequest<T> implements DalRequest<T> {
                 ((DalContextConfigure) taskContext).addTables(tempTableName);
 
             String compiledSql = compileSql(sql, originalParameters);
-            return task.execute(client, compiledSql, compiledParameters, hints.clone(), taskContext.fork());
+            return task.execute(client, compiledSql, compiledParameters, hints.clone(), taskContext);
         }
 
         private String compileSql(String sql, StatementParameters parameters) throws SQLException {

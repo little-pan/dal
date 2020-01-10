@@ -1,6 +1,5 @@
 package com.ctrip.platform.dal.dao.task;
 
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 
 import com.ctrip.platform.dal.dao.DalClientFactory;
@@ -38,8 +37,6 @@ public class RequestTaskWrapper<T> implements Callable<T> {
             error = e;
         }
 
-        logContext.setStatementExecuteTime(task.getDalTaskContext().getStatementExecuteTime());
-        logContext.setEntries(Arrays.asList(task.getDalTaskContext().getLogEntry()));
         logger.endTask(logContext, shard, error);
 
         if(error != null)

@@ -1,10 +1,7 @@
 package com.ctrip.platform.dal.dao.task;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -146,8 +143,13 @@ public class DalRequestExecutor {
 
 	private <T> T nonCrossShardExecute(LogContext logContext, DalHints hints, DalRequest<T> request) throws Exception {
         logContext.setSingleTask(true);
-	    Callable<T> task = new RequestTaskWrapper<T>(NA, request.createTask(), logContext);
-		return task.call();
+        TaskCallable<T> task = request.createTask();
+	    Callable<T> taskWrapper = new RequestTaskWrapper<T>(NA, task, logContext);
+	    T result = taskWrapper.call();
+
+		logContext.setStatementExecuteTime(task.getDalTaskContext().getStatementExecuteTime());
+		logContext.setEntries(Arrays.asList(task.getDalTaskContext().getLogEntry()));
+		return result;
 	}
 	
 	private <T> T crossShardExecute(LogContext logContext, DalHints hints, DalRequest<T> request) throws Exception {
@@ -196,7 +198,7 @@ public class DalRequestExecutor {
 	private <T> T parallelExecute(DalHints hints, Map<String, TaskCallable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
 		Map<String, Future<T>> resultFutures = new HashMap<>();
 
-		List<LogEntry> entriesLog = new ArrayList<>();
+		List<LogEntry> logEntries = new ArrayList<>();
 		long maxStatementExecuteTime = 0;
 		for(final String shard: tasks.keySet())
 			resultFutures.put(shard, serviceRef.get().submit(new RequestTaskWrapper<T>(shard, tasks.get(shard), logContext)));
@@ -207,32 +209,40 @@ public class DalRequestExecutor {
 			} catch (Throwable e) {
 				hints.handleError("There is error during parallel execution: ", e);
 			}
-			maxStatementExecuteTime = Math.max(maxStatementExecuteTime, tasks.get(entry.getKey()).getDalTaskContext().getStatementExecuteTime());
-			entriesLog.add(tasks.get(entry.getKey()).getDalTaskContext().getLogEntry());
+			TaskCallable task = tasks.get(entry.getKey());
+			maxStatementExecuteTime = Math.max(maxStatementExecuteTime, task.getStatementExecuteTime(task.getDalTaskContext()));
+            addLogEntry(logEntries, task.getLogEntry(task.getDalTaskContext()));
 		}
 
 		logContext.setStatementExecuteTime(maxStatementExecuteTime);
-		logContext.setEntries(entriesLog);
+		logContext.setEntries(logEntries);
 		return merger.merge();
 	}
 
 	private <T> T seqncialExecute(DalHints hints, Map<String, TaskCallable<T>> tasks, ResultMerger<T> merger, LogContext logContext) throws SQLException {
 		long totalStatementExecuteTime = 0;
-		List<LogEntry> entriesLog = new ArrayList<>();
+		List<LogEntry> logEntries = new ArrayList<>();
 		for(final String shard: tasks.keySet()) {
 			try {
 				merger.addPartial(shard, new RequestTaskWrapper<T>(shard, tasks.get(shard), logContext).call());
 			} catch (Throwable e) {
 				hints.handleError("There is error during sequential execution: ", e);
 			}
-			totalStatementExecuteTime += tasks.get(shard).getDalTaskContext().getStatementExecuteTime();
-			entriesLog.add(tasks.get(shard).getDalTaskContext().getLogEntry());
+            TaskCallable task = tasks.get(shard);
+			totalStatementExecuteTime += task.getStatementExecuteTime(task.getDalTaskContext());
+            addLogEntry(logEntries, task.getLogEntry(task.getDalTaskContext()));
 		}
 
 		logContext.setStatementExecuteTime(totalStatementExecuteTime);
-		logContext.setEntries(entriesLog);
+		logContext.setEntries(logEntries);
 		return merger.merge();
 	}
+
+	private void addLogEntry(List<LogEntry> logEntries, LogEntry logEntry) {
+	    if (logEntry != null) {
+	        logEntries.add(logEntry);
+        }
+    }
 	
 	public static int getPoolSize() {
 	    ThreadPoolExecutor executer = (ThreadPoolExecutor)serviceRef.get();

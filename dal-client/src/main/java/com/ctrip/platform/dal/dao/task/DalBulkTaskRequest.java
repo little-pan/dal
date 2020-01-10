@@ -164,9 +164,9 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 			    return task.getEmptyValue();
 			
 			if(isTableShardingEnabled(logicDbName, rawTableName)) {
-				return executeByTableShards((DalBulkTaskContext<T>) taskContext.fork());
+				return executeByTableShards((DalBulkTaskContext<T>) taskContext);
 			}else{
-				return execute(hints, shaffled, (DalBulkTaskContext<T>) taskContext.fork());
+				return execute(hints, shaffled, (DalBulkTaskContext<T>) taskContext);
 			}
 		}
 
@@ -184,7 +184,6 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
 
             mergePartial(task, hints.getKeyHolder(), indexList, localHints.getKeyHolder(), error);
 
-            this.taskContext.setStatementExecuteTime(taskContext.getStatementExecuteTime());
             // Upper level may handle continue on error
             if(error != null)
                 throw DalException.wrap(error);
@@ -219,11 +218,11 @@ public class DalBulkTaskRequest<K, T> implements DalRequest<K>{
                 } catch (Throwable e) {
                     error = e;
                 }
-				allTableStatementExecuteTime += taskContext.getStatementExecuteTime();
+				allTableStatementExecuteTime += getStatementExecuteTime(taskContext);
                 mergePartial(task, hints.getKeyHolder(), indexList, localHints.getKeyHolder(), error);
                 hints.handleError("Error when execute table shard operation", error);
 			}
-			this.taskContext.setStatementExecuteTime(allTableStatementExecuteTime);
+			setStatementExecuteTime(taskContext, allTableStatementExecuteTime);
 			return merger.merge();
 		}
 

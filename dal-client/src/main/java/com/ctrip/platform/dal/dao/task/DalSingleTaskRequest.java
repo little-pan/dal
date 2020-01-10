@@ -133,12 +133,15 @@ public class DalSingleTaskRequest<T> implements DalRequest<int[]> {
                 Throwable error = null;
                 DalHints localHints = prepareLocalHints(task, hints);
 
+                long allTableStatementExecuteTime = 0;
                 try {
                     counts[i] = task.execute(localHints, daoPojos.get(i), rawPojos.get(i), taskContext);
+                    allTableStatementExecuteTime += getStatementExecuteTime(taskContext);
                 } catch (Throwable e) {
                     error = e;
                 }
 
+                setStatementExecuteTime(taskContext, allTableStatementExecuteTime);
                 mergePartial(task, hints.getKeyHolder(), localHints.getKeyHolder(), error);
                 hints.handleError("Error when execute single pojo operation", error);
             }
