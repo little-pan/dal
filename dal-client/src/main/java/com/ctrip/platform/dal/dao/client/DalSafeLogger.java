@@ -177,15 +177,6 @@ public class DalSafeLogger implements DalLogger {
     }
 
     @Override
-    public void reportError(LogEntry entry) {
-        try {
-            logger.reportError(entry);
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-    }
-
-    @Override
     public void markdown(MarkDownInfo markdown) {
         try{
             logger.markdown(markdown);

@@ -14,6 +14,7 @@ import javax.sql.DataSource;
 import com.ctrip.platform.dal.dao.configure.DataSourceConfigureChangeEvent;
 import com.ctrip.platform.dal.dao.configure.DataSourceConfigure;
 import com.ctrip.platform.dal.dao.configure.DataSourceConfigureChangeListener;
+import com.ctrip.platform.dal.dao.datasource.jdbc.DalConnection;
 import com.ctrip.platform.dal.dao.helper.ConnectionHelper;
 import com.ctrip.platform.dal.dao.helper.CustomThreadFactory;
 import com.ctrip.platform.dal.dao.helper.DalElementFactory;
@@ -239,12 +240,12 @@ public class RefreshableDataSource implements DataSource, DataSourceConfigureCha
                 }
             }
         }
-        return connection;
+        return new DalConnection(connection, dataSourceReference.get());
     }
 
     @Override
     public Connection getConnection(String paramString1, String paramString2) throws SQLException {
-        return getDataSource().getConnection(paramString1, paramString2);
+        return new DalConnection(getDataSource().getConnection(paramString1, paramString2), dataSourceReference.get());
     }
 
     @Override

@@ -50,10 +50,6 @@ public abstract class ConnectionAction<T> {
     private static final String SWITCH_OFF = "SwitchOff";
     public ShardingCategory shardingCategory;
     public DalTaskContext dalTaskContext;
-    private Map<String, LocalDateTime> firstErrorTimeMap = new ConcurrentHashMap<>();
-    private static final int PERMIT_ERROR_DURATION_TIME = 1; //minute
-    private static final int REPORT_ERROR_FREQUENCY = 30; //second
-    private long lastReportErrorTime = 0;
 
     void populate(DalEventEnum operation, String sql, StatementParameters parameters, DalTaskContext dalTaskContext) {
         this.operation = operation;
@@ -319,31 +315,8 @@ public abstract class ConnectionAction<T> {
         if (e instanceof TransactionSystemException) {
             throw (TransactionSystemException) e;
         }
-        LocalDateTime firstErrorTime = firstErrorTimeMap.get(connHolder.getAllInOneKey());
-        if (e != null) {
-            LocalDateTime nowTime = LocalDateTime.now();
-            if (firstErrorTime == null) {
-                firstErrorTimeMap.put(connHolder.getAllInOneKey(), nowTime);
-            }
-            else {
-                Duration duration = Duration.between(firstErrorTime, nowTime);
-                if (duration.toMinutes() >= PERMIT_ERROR_DURATION_TIME) {
-                    //report dashboard and control frequency
-                    long now = System.currentTimeMillis();
-                    if (lastReportErrorTime == 0 || now - lastReportErrorTime > REPORT_ERROR_FREQUENCY * 1000) {
-                        logger.reportError(entry);
-                    }
-                }
-            }
+        if (e != null)
             throw e instanceof SQLException ? (SQLException) e : DalException.wrap(e);
-        }
-        else {
-            if (firstErrorTime != null) {
-                //reset firstErrorTime of this allInOneKey and lastReportErrorTime
-                firstErrorTimeMap.put(connHolder.getAllInOneKey(), null);
-                lastReportErrorTime = 0;
-            }
-        }
     }
 
     private String wrapAPPID(String sql) {

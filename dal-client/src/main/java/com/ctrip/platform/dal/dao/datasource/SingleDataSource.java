@@ -6,6 +6,7 @@ import com.ctrip.platform.dal.dao.datasource.tomcat.DalTomcatDataSource;
 import com.ctrip.platform.dal.dao.helper.*;
 import com.ctrip.platform.dal.dao.log.DalLogTypes;
 import com.ctrip.platform.dal.dao.log.ILogger;
+import com.ctrip.platform.dal.dao.log.TimeErrorLog;
 import com.ctrip.platform.dal.exceptions.DalRuntimeException;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
 import org.apache.tomcat.jdbc.pool.Validator;
@@ -20,6 +21,7 @@ public class SingleDataSource implements DataSourceConfigureConstants {
     private DataSource dataSource;
     private DataSourceCreateTask task;
     private DataSourceCreatePoolListener listener;
+    private volatile TimeErrorLog timeErrorLog = new TimeErrorLog();
 
     private static final String DATASOURCE_CREATE_DATASOURCE = "DataSource::createDataSource:%s";
 
@@ -41,6 +43,14 @@ public class SingleDataSource implements DataSourceConfigureConstants {
 
     public void setTask(DataSourceCreateTask task) {
         this.task = task;
+    }
+
+    public TimeErrorLog getTimeErrorLog() {
+        return timeErrorLog;
+    }
+
+    public synchronized void setTimeErrorLog(TimeErrorLog timeErrorLog) {
+        this.timeErrorLog = timeErrorLog;
     }
 
     public SingleDataSource(String name, DataSourceConfigure dataSourceConfigure) {
