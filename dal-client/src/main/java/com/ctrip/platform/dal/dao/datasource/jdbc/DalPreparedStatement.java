@@ -21,22 +21,28 @@ public class DalPreparedStatement extends DalStatement implements PreparedStatem
 
     @Override
     public ResultSet executeQuery() throws SQLException {
+        SQLException exception = null;
+        ResultSet result = null;
         try {
-            return preparedStatement.executeQuery();
+            result = preparedStatement.executeQuery();
         } catch (SQLException e) {
-            handle(singleDataSource);
-            throw new SQLException(e);
+            exception = e;
         }
+        handle(singleDataSource, exception);
+        return result;
     }
 
     @Override
     public int executeUpdate() throws SQLException {
+        SQLException exception = null;
+        int result = 0;
         try {
-            return preparedStatement.executeUpdate();
+            result = preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            handle(singleDataSource);
-            throw new SQLException(e);
+            exception = e;
         }
+        handle(singleDataSource, exception);
+        return result;
     }
 
     @Override
@@ -141,12 +147,15 @@ public class DalPreparedStatement extends DalStatement implements PreparedStatem
 
     @Override
     public boolean execute() throws SQLException {
+        SQLException exception = null;
+        boolean result = false;
         try {
-            return preparedStatement.execute();
+            result = preparedStatement.execute();
         } catch (SQLException e) {
-            handle(singleDataSource);
-            throw new SQLException(e);
+            exception = e;
         }
+        handle(singleDataSource, exception);
+        return result;
     }
 
     @Override
@@ -321,11 +330,14 @@ public class DalPreparedStatement extends DalStatement implements PreparedStatem
 
     @Override
     public long executeLargeUpdate() throws SQLException {
+        SQLException exception = null;
+        long result = 0;
         try {
-            return preparedStatement.executeLargeUpdate();
+            result = preparedStatement.executeLargeUpdate();
         } catch (SQLException e) {
-            handle(singleDataSource);
-            throw new SQLException(e);
+            exception = e;
         }
+        handle(singleDataSource, exception);
+        return result;
     }
 }

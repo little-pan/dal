@@ -19,12 +19,12 @@ public class DalConnectionTest {
     {
         properties.setProperty(USER_NAME, "root");
         properties.setProperty(PASSWORD, "123456");
-        properties.setProperty(CONNECTION_URL, "jdbc:mysql://localhost:3306/Test");
+        properties.setProperty(CONNECTION_URL, "jdbc:mysql://localhost:3306/test");
         properties.setProperty(DRIVER_CLASS_NAME, "com.mysql.jdbc.Driver");
         DataSourceConfigure configure = new DataSourceConfigure("DalService2DB_w", properties);
         try {
             dataSource = new RefreshableDataSource("DalService2DB_w", configure);
-            dataSource.getConnection();
+            connection = dataSource.getConnection();
         } catch (SQLException e) {
 
         }
@@ -37,6 +37,7 @@ public class DalConnectionTest {
         } else {
             Assert.fail();
         }
+        connection.close();
     }
 
     @Test
